@@ -252,6 +252,43 @@ html, body {
   width: 100%;
   align-items: center;
 }
+/* YES/NO確認ダイアログ */
+#go-nav-confirm {
+  position: absolute !important;
+  top: 0; left: 0; right: 0;
+  padding: 28px 24px 22px;
+  background: rgba(0,4,0,0.94);
+  border-bottom: 2px solid rgba(136,255,85,0.6);
+  text-align: center;
+  z-index: 5 !important;
+  display: none;
+}
+#go-nav-confirm p {
+  font-size: 15px; letter-spacing: 2px; color: #dff0d0;
+  line-height: 1.8; margin-bottom: 18px;
+}
+#go-yesno {
+  display: flex; gap: 24px; justify-content: center;
+}
+.go-yn-btn {
+  font-family: 'M PLUS 1p', sans-serif; font-weight: 800;
+  font-size: 22px; letter-spacing: 8px;
+  padding: 12px 38px; border-radius: 6px;
+  cursor: pointer; transition: transform 0.1s;
+}
+.go-yn-btn:active { transform: scale(0.90); }
+#btn-yes {
+  background: rgba(136,255,85,0.12);
+  border: 2px solid rgba(136,255,85,0.8);
+  color: #88ff55;
+  text-shadow: 0 0 10px rgba(136,255,85,0.5);
+}
+#btn-no {
+  background: rgba(255,80,80,0.1);
+  border: 2px solid rgba(255,80,80,0.7);
+  color: #ff6666;
+  text-shadow: 0 0 10px rgba(255,80,80,0.5);
+}
 </style>
 </head>
 <body>
@@ -296,6 +333,13 @@ html, body {
 
 <!-- GAME OVER SCREEN -->
 <div id="gameover-screen">
+  <div id="go-nav-confirm">
+    <p>別のページに飛びますがよろしいですか？</p>
+    <div id="go-yesno">
+      <button class="go-yn-btn" id="btn-yes">YES</button>
+      <button class="go-yn-btn" id="btn-no">NO</button>
+    </div>
+  </div>
   <div id="go-commander">
     <img src="/commander.png" alt="指揮官" id="go-commander-img">
   </div>
@@ -786,6 +830,14 @@ function speakMessage(text) {
   utter.pitch = 1.1;
   window.speechSynthesis.speak(utter);
 }
+function speakAndThen(text, callback) {
+  if (!window.speechSynthesis) { setTimeout(callback, 1800); return; }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP'; utter.rate = 0.95; utter.pitch = 1.1;
+  utter.onend = callback;
+  window.speechSynthesis.speak(utter);
+}
 
 // ===== INPUT =====
 document.addEventListener('keydown', (e) => {
@@ -850,26 +902,37 @@ function pressBtn(btn, onDone) {
 // ===== VOLUNTEER BUTTON =====
 $('btn-volunteer').addEventListener('click', function() {
   if (this.style.pointerEvents === 'none') return;
-  this.style.pointerEvents = 'none';
+  // 両ボタン無効化（NOで再有効化するまで）
+  $('btn-volunteer').style.pointerEvents = 'none';
   $('btn-share').style.pointerEvents = 'none';
   playVolunteerSound();
   pressBtn(this, () => {
-    const msg = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
-    typeMessage(msg, null);
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(msg);
-      utter.lang = 'ja-JP'; utter.rate = 0.95; utter.pitch = 1.1;
-      utter.onend = () => setTimeout(() => {
-        window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
-      }, 1000);
-      window.speechSynthesis.speak(utter);
-    } else {
-      setTimeout(() => {
-        window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
-      }, 3000);
-    }
+    const msg1 = '準備はよいか？';
+    const msg2 = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
+    // 1つ目のメッセージ表示→音声
+    typeMessage(msg1, null);
+    speakAndThen(msg1, () => {
+      // 2つ目のメッセージ表示→音声
+      $('go-message').textContent = '';
+      typeMessage(msg2, null);
+      speakAndThen(msg2, () => {
+        // 音声終了後にYES/NO表示
+        $('go-nav-confirm').style.display = 'block';
+      });
+    });
   });
+});
+
+// ===== YES/NO BUTTONS =====
+$('btn-yes').addEventListener('click', () => {
+  window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+});
+$('btn-no').addEventListener('click', () => {
+  $('go-nav-confirm').style.display = 'none';
+  $('go-message').textContent = '';
+  // 両ボタン再有効化
+  $('btn-volunteer').style.pointerEvents = '';
+  $('btn-share').style.pointerEvents = '';
 });
 
 // ===== SHARE BUTTON =====
