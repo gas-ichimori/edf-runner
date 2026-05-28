@@ -282,6 +282,7 @@ html, body {
   cursor: pointer; transition: transform 0.1s;
 }
 .go-yn-btn:active { transform: scale(0.90); }
+.go-yn-btn.pressing { animation: go-btn-press 0.32s ease forwards; }
 #btn-yes {
   background: rgba(136,255,85,0.12);
   border: 2px solid rgba(136,255,85,0.8);
@@ -449,6 +450,37 @@ function playWaveAlertSound() {
       osc.start(ac.currentTime + offset);
       osc.stop(ac.currentTime + offset + 0.40);
     });
+  } catch(e) {}
+}
+function playYesSound() {
+  try {
+    const ac = getAudio();
+    [440, 660].forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const t = ac.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0.0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      osc.start(t); osc.stop(t + 0.15);
+    });
+  } catch(e) {}
+}
+function playNoSound() {
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(360, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(160, ac.currentTime + 0.22);
+    gain.gain.setValueAtTime(0.2, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.24);
+    osc.start(); osc.stop(ac.currentTime + 0.24);
   } catch(e) {}
 }
 function playShareSound() {
@@ -899,6 +931,11 @@ function onStartPress() {
   const btn = $('start-btn');
   if (btn.classList.contains('launching')) return;
   btn.classList.add('launching');
+  // iOS Safari: ユーザー操作の文脈でSpeech Synthesisを解禁
+  if (window.speechSynthesis) {
+    const u = new SpeechSynthesisUtterance('');
+    window.speechSynthesis.speak(u);
+  }
   playStartSound();
   setTimeout(startGame, 480);
 }
@@ -988,15 +1025,20 @@ $('btn-volunteer').addEventListener('click', function() {
 });
 
 // ===== YES/NO BUTTONS =====
-$('btn-yes').addEventListener('click', () => {
-  window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+$('btn-yes').addEventListener('click', function() {
+  playYesSound();
+  pressBtn(this, () => {
+    window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+  });
 });
-$('btn-no').addEventListener('click', () => {
-  $('go-nav-confirm').style.display = 'none';
-  $('go-message').textContent = '';
-  // 両ボタン再有効化
-  $('btn-volunteer').style.pointerEvents = '';
-  $('btn-share').style.pointerEvents = '';
+$('btn-no').addEventListener('click', function() {
+  playNoSound();
+  pressBtn(this, () => {
+    $('go-nav-confirm').style.display = 'none';
+    $('go-message').textContent = '';
+    $('btn-volunteer').style.pointerEvents = '';
+    $('btn-share').style.pointerEvents = '';
+  });
 });
 
 // ===== SHARE BUTTON =====
