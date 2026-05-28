@@ -418,6 +418,19 @@ function playVolunteerSound() {
     });
   } catch(e) {}
 }
+function playTypeClick() {
+  try {
+    const ac = getAudio();
+    const buf = ac.createBuffer(1, 256, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < 256; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / 30);
+    const src = ac.createBufferSource();
+    const gain = ac.createGain();
+    src.buffer = buf; src.connect(gain); gain.connect(ac.destination);
+    gain.gain.setValueAtTime(0.07, ac.currentTime);
+    src.start();
+  } catch(e) {}
+}
 function playWaveAlertSound() {
   try {
     const ac = getAudio();
@@ -815,21 +828,23 @@ function updateHUD() {
 
 // ===== GAME OVER SCREEN =====
 const GO_MESSAGES = [
-  '隊員が倒れた！\n敵の侵攻を止められなかった…',
-  '巨大生物に敗北…\n我々の戦いはここで終わるのか！',
-  '隊員よ…よく戦ってくれた。\n次は必ず勝利を掴め！',
+  { text: '隊員が倒れた！\n敵の侵攻を止められなかった…',   speech: null },
+  { text: '巨大生物に敗北…\n我々の戦いはここで終わるのか！', speech: null },
+  { text: '…勇気ある行動に感謝だ！\n次は必ず突破してくれ！',
+    speech: 'ゆうきあるこうどうにかんしゃだ！つぎはかならずとっぱしてくれ！' },
 ];
 
 function showGameOverScreen() {
-  const msg = GO_MESSAGES[Math.floor(Math.random() * GO_MESSAGES.length)];
+  const msgObj = GO_MESSAGES[Math.floor(Math.random() * GO_MESSAGES.length)];
   $('go-message').textContent = '';
   $('go-score-text').textContent = `SCORE: ${score} — SURVIVAL: ${Math.floor(elapsed)}s`;
   $('btn-volunteer').style.pointerEvents = '';
+  $('go-nav-confirm').style.display = 'none';
   $('gameover-screen').style.display = 'flex';
 
-  // typewriter voice + text
-  typeMessage(msg, () => {
-    speakMessage(msg.replace(/\n/g, '。'));
+  const speechText = msgObj.speech || msgObj.text.replace(/\n/g, '。');
+  typeMessage(msgObj.text, () => {
+    speakMessage(speechText);
   });
 }
 
@@ -839,7 +854,9 @@ function typeMessage(text, onDone) {
   let i = 0;
   const interval = setInterval(() => {
     if (i < text.length) {
-      el.textContent += text[i++];
+      const ch = text[i++];
+      el.textContent += ch;
+      if (ch !== '\n' && ch !== ' ') playTypeClick();
     } else {
       clearInterval(interval);
       if (onDone) onDone();
