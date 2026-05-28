@@ -933,8 +933,8 @@ $('btn-volunteer').addEventListener('click', function() {
   $('btn-share').style.pointerEvents = 'none';
   playVolunteerSound();
   pressBtn(this, () => {
-    const msg1 = '準備はよいか？';
-    const msg2 = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
+    const msg1 = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
+    const msg2 = '準備はよいか？';
     // 1つ目のメッセージ表示→音声
     typeMessage(msg1, null);
     speakAndThen(msg1, () => {
