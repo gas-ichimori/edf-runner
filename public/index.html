@@ -646,8 +646,7 @@ function showGameOverScreen() {
   const msg = GO_MESSAGES[Math.floor(Math.random() * GO_MESSAGES.length)];
   $('go-message').textContent = '';
   $('go-score-text').textContent = `SCORE: ${score} — SURVIVAL: ${Math.floor(elapsed)}s`;
-  $('go-confirm-btn').textContent = '指揮官確認';
-  $('go-confirm-btn').classList.remove('confirmed');
+  $('btn-volunteer').style.pointerEvents = '';
   $('gameover-screen').style.display = 'flex';
 
   // typewriter voice + text
