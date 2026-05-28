@@ -914,10 +914,10 @@ function speakAndThen(text, callback) {
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'ja-JP'; utter.rate = 0.95; utter.pitch = 1.1;
-  utter.onend = proceed;
+  utter.onend = () => setTimeout(proceed, 800);
   utter.onerror = () => setTimeout(proceed, 300);
   // iOS Safari で onend が発火しない場合のフォールバック
-  setTimeout(proceed, Math.max(2500, text.length * 180));
+  setTimeout(proceed, Math.max(2500, text.length * 220));
   window.speechSynthesis.speak(utter);
 }
 
