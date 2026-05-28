@@ -322,7 +322,8 @@ let gameRunning = false;
 let gameOver    = false;
 let startTime, elapsed, score;
 let scrollSpeed;
-let bgX1, bgX2, groundX1, groundX2;
+let bgX1, bgX2, bgW;
+let groundX1, groundX2;
 let soldier, ants, effects;
 let nextAntSpawn;
 let inWave, waveStartTime;
@@ -334,9 +335,15 @@ function $ (id) { return document.getElementById(id); }
 
 // ===== RESIZE =====
 function resize() {
-  W = canvas.width  = canvas.offsetWidth;
-  H = canvas.height = canvas.offsetHeight;
+  const newW = window.innerWidth;
+  const newH = window.innerHeight;
+  if (W === newW && H === newH) return;
+  W = canvas.width  = newW;
+  H = canvas.height = newH;
   groundY = H * GROUND_RATIO;
+  // background width based on image aspect ratio
+  const bgImg = ASSETS['bg'];
+  bgW = bgImg ? H * (bgImg.naturalWidth / bgImg.naturalHeight) : W;
 }
 
 // ===== INIT GAME =====
@@ -348,7 +355,7 @@ function initGame() {
   score        = 0;
   scrollSpeed  = SCROLL_SPEED_INIT;
   bgX1         = 0;
-  bgX2         = W;
+  bgX2         = bgW;
   groundX1     = 0;
   groundX2     = W;
   inWave       = false;
@@ -395,6 +402,12 @@ function update(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
 
+  // always update effects (needed for game over explosion animation)
+  for (let i = effects.length - 1; i >= 0; i--) {
+    effects[i].timer -= dt * 1000;
+    if (effects[i].timer <= 0) effects.splice(i, 1);
+  }
+
   if (!gameRunning || gameOver) return;
 
   elapsed = (now - startTime) / 1000;
@@ -415,8 +428,8 @@ function update(now) {
   const dx = scrollSpeed * dt;
   bgX1 -= dx * 0.6;
   bgX2 -= dx * 0.6;
-  if (bgX1 + W <= 0) bgX1 = bgX2 + W;
-  if (bgX2 + W <= 0) bgX2 = bgX1 + W;
+  if (bgX1 + bgW <= 0) bgX1 = bgX2 + bgW;
+  if (bgX2 + bgW <= 0) bgX2 = bgX1 + bgW;
 
   groundX1 -= dx;
   groundX2 -= dx;
@@ -475,12 +488,6 @@ function update(now) {
     }
   }
 
-  // effects
-  for (let i = effects.length - 1; i >= 0; i--) {
-    effects[i].timer -= dt * 1000;
-    if (effects[i].timer <= 0) effects.splice(i, 1);
-  }
-
   updateHUD();
 }
 
@@ -513,25 +520,24 @@ function triggerGameOver() {
   gameOver    = true;
   gameRunning = false;
 
-  // show effect at soldier position
   effects.push({ x: soldier.x, y: soldier.y - 10, timer: 800 });
 
-  // show game over screen after short delay
   setTimeout(() => {
+    cancelAnimationFrame(animId);
     $('game-screen').style.display = 'none';
     showGameOverScreen();
-  }, 900);
+  }, 950);
 }
 
 // ===== DRAW =====
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
-  // background
+  // background (maintain aspect ratio, tile horizontally)
   const bg = ASSETS['bg'];
   if (bg) {
-    ctx.drawImage(bg, bgX1, 0, W, H);
-    ctx.drawImage(bg, bgX2, 0, W, H);
+    ctx.drawImage(bg, bgX1, 0, bgW, H);
+    ctx.drawImage(bg, bgX2, 0, bgW, H);
   } else {
     ctx.fillStyle = '#0a1a0f';
     ctx.fillRect(0, 0, W, H);
@@ -585,11 +591,7 @@ function draw() {
 function gameLoop(now) {
   update(now);
   draw();
-  if (!gameOver) animId = requestAnimationFrame(gameLoop);
-  else {
-    // keep drawing effect
-    draw();
-  }
+  animId = requestAnimationFrame(gameLoop);
 }
 
 // ===== HUD =====
@@ -660,20 +662,25 @@ function startGame() {
   $('game-screen').style.display = 'block';
   canvas = $('game-canvas');
   ctx    = canvas.getContext('2d');
-  resize();
 
   canvas.addEventListener('click', jump);
   canvas.addEventListener('touchend', (e) => { e.preventDefault(); jump(); }, { passive: false });
 
   loadAssets().then(() => {
+    // set canvas size after assets loaded so bgW can be computed from image dimensions
+    W = 0; H = 0; // force resize to apply
+    resize();
     initGame();
     lastTime = performance.now();
     animId   = requestAnimationFrame(gameLoop);
   });
 }
 
+let resizeTimer;
 window.addEventListener('resize', () => {
-  if (canvas) resize();
+  if (!canvas || gameRunning) return; // don't resize during active play
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(resize, 150);
 });
 
 // ===== CONFIRM BUTTON =====
@@ -686,7 +693,6 @@ $('go-confirm-btn').addEventListener('click', function() {
   setTimeout(() => {
     $('gameover-screen').style.display = 'none';
     $('top-screen').style.display = 'flex';
-    cancelAnimationFrame(animId);
   }, 1500);
 });
 </script>
