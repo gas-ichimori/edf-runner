@@ -418,6 +418,26 @@ function playVolunteerSound() {
     });
   } catch(e) {}
 }
+function playWaveAlertSound() {
+  try {
+    const ac = getAudio();
+    // サイレン風：低→高→低を素早く繰り返す2サイクル
+    [0, 0.22].forEach(offset => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, ac.currentTime + offset);
+      osc.frequency.linearRampToValueAtTime(700, ac.currentTime + offset + 0.18);
+      osc.frequency.linearRampToValueAtTime(300, ac.currentTime + offset + 0.36);
+      gain.gain.setValueAtTime(0.28, ac.currentTime + offset);
+      gain.gain.setValueAtTime(0.28, ac.currentTime + offset + 0.30);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + offset + 0.40);
+      osc.start(ac.currentTime + offset);
+      osc.stop(ac.currentTime + offset + 0.40);
+    });
+  } catch(e) {}
+}
 function playShareSound() {
   try {
     const ac = getAudio();
@@ -698,6 +718,7 @@ function spawnWave() {
 function showWaveAlert() {
   const el = $('wave-alert');
   el.classList.add('show');
+  playWaveAlertSound();
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
