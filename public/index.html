@@ -194,38 +194,34 @@ html, body {
   text-shadow: 0 0 10px rgba(200,168,50,0.5);
 }
 .go-btn {
-  background: rgba(0,0,0,0.5);
-  border-radius: 8px;
+  background: none;
+  border: none;
   cursor: pointer;
   padding: 0;
-  transition: transform 0.1s, filter 0.1s;
-  border: none;
+  position: relative;
+  transition: transform 0.1s;
+  display: block;
 }
 .go-btn:active { transform: scale(0.95); }
+.go-btn img { display: block; width: 280px; }
 .go-btn-text {
-  display: block;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
   font-family: 'M PLUS 1p', sans-serif;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 3px;
-  padding: 16px 28px;
-  border-radius: 8px;
-}
-#btn-volunteer {
-  border: 2px solid rgba(136,255,85,0.7);
-  filter: drop-shadow(0 0 10px rgba(136,255,85,0.3));
+  pointer-events: none;
 }
 #btn-volunteer .go-btn-text {
-  color: #88ff55;
-  text-shadow: 0 0 10px rgba(136,255,85,0.5);
-}
-#btn-share {
-  border: 2px solid rgba(200,168,50,0.7);
-  filter: drop-shadow(0 0 10px rgba(200,168,50,0.3));
+  color: #dff0d0;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.9);
 }
 #btn-share .go-btn-text {
-  color: #c8a832;
-  text-shadow: 0 0 10px rgba(200,168,50,0.5);
+  color: #f0e0a0;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.9);
 }
 #go-btns {
   display: flex;
@@ -286,10 +282,12 @@ html, body {
     <div id="go-score-text"></div>
     <div id="go-btns">
       <button class="go-btn" id="btn-volunteer">
-        <img src="/btn_volunteer.png" alt="名もなき兵士に志願" style="width:280px;display:block;">
+        <img src="/btn_volunteer.png" alt="名もなき兵士に志願">
+        <span class="go-btn-text">名もなき兵士に志願</span>
       </button>
       <button class="go-btn" id="btn-share">
-        <img src="/btn_share.png" alt="志願者募集をシェア" style="width:280px;display:block;">
+        <img src="/btn_share.png" alt="志願者募集をシェア">
+        <span class="go-btn-text">志願者募集をシェア</span>
       </button>
     </div>
   </div>
@@ -723,11 +721,29 @@ window.addEventListener('resize', () => {
 // ===== VOLUNTEER BUTTON =====
 $('btn-volunteer').addEventListener('click', function() {
   this.style.pointerEvents = 'none';
-  window.speechSynthesis && window.speechSynthesis.cancel();
-  speakMessage('貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう');
-  setTimeout(() => {
-    window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
-  }, 1000);
+  $('btn-share').style.pointerEvents = 'none';
+  const msg = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
+  // タイプライターでメッセージ表示
+  typeMessage(msg, null);
+  // 音声再生、終了後1秒で遷移
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(msg);
+    utter.lang = 'ja-JP';
+    utter.rate = 0.95;
+    utter.pitch = 1.1;
+    utter.onend = () => {
+      setTimeout(() => {
+        window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+      }, 1000);
+    };
+    window.speechSynthesis.speak(utter);
+  } else {
+    // 音声非対応の場合は3秒後に遷移
+    setTimeout(() => {
+      window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+    }, 3000);
+  }
 });
 
 // ===== SHARE BUTTON =====
