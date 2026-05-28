@@ -1006,21 +1006,14 @@ $('btn-volunteer').addEventListener('click', function() {
     const msg1 = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
     const msg2 = '準備はよいか？';
 
-    // msg1: タイプライター表示 + 同時に音声開始、タイプ完了+余韻で次へ
     typeMessage(msg1, null);
-    speakMessage(msg1);
-    const wait1 = msg1.length * 62 + 1200; // タイプ時間 + 音声余韻
-
-    setTimeout(() => {
+    speakAndThen(msg1, () => {
       $('go-message').textContent = '';
       typeMessage(msg2, null);
-      speakMessage(msg2);
-      const wait2 = msg2.length * 62 + 1800; // タイプ時間 + 音声余韻
-
-      setTimeout(() => {
+      speakAndThen(msg2, () => {
         $('go-nav-confirm').style.display = 'block';
-      }, wait2);
-    }, wait1);
+      });
+    });
   });
 });
 
