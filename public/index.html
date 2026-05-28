@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>EDF RUNNER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'M PLUS 1p', sans-serif;
+  font-weight: 800;
+  background: #07100a;
+  color: #dff0d0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* ===== TOP SCREEN ===== */
+#top-screen {
+  position: fixed; inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  z-index: 10;
+}
+#top-bg {
+  position: absolute; inset: 0;
+  background: url('/bg.png') center center / cover no-repeat;
+  z-index: 0;
+}
+#top-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+}
+#top-screen > * { position: relative; z-index: 1; }
+
+#logo-switcher {
+  position: relative;
+  width: 200px; height: 80px;
+}
+#logo-switcher img {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  filter: drop-shadow(0 2px 16px rgba(0,0,0,0.8));
+}
+#logo-switcher img.active { opacity: 1; }
+
+#top-title {
+  text-align: center;
+}
+#top-title h1 {
+  font-size: 52px; letter-spacing: 8px; color: #c8a832;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.9);
+}
+#top-title .sub {
+  display: block; margin-top: 8px;
+  font-size: 13px; letter-spacing: 5px; color: rgba(200,168,50,0.8);
+}
+
+.top-desc {
+  text-align: center;
+  font-size: 18px; letter-spacing: 3px; color: #dff0d0;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.9);
+  line-height: 1.8;
+}
+
+#start-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 0;
+  filter: drop-shadow(0 0 16px rgba(136,255,85,0.6));
+  transition: transform 0.1s, filter 0.1s;
+}
+#start-btn:active {
+  transform: scale(0.94);
+  filter: drop-shadow(0 0 8px rgba(136,255,85,0.3));
+}
+#start-btn img { width: 110px; height: 110px; object-fit: contain; }
+
+#top-copyright {
+  position: absolute; bottom: 10px; left: 0; right: 0;
+  text-align: center;
+  font-size: 8px; letter-spacing: 3px;
+  color: rgba(200,240,160,0.6);
+}
+
+/* ===== GAME SCREEN ===== */
+#game-screen {
+  position: fixed; inset: 0;
+  display: none;
+}
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* HUD */
+#hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 20px;
+  pointer-events: none;
+  z-index: 2;
+}
+#hud-score {
+  font-size: 22px; letter-spacing: 4px; color: #88ff55;
+  text-shadow: 0 0 12px rgba(136,255,85,0.6);
+}
+#hud-time {
+  font-size: 22px; letter-spacing: 4px; color: #c8a832;
+  text-shadow: 0 0 12px rgba(200,168,50,0.6);
+}
+
+/* WAVE ALERT */
+#wave-alert {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px; letter-spacing: 6px; color: #ff4444;
+  text-shadow: 0 0 20px rgba(255,60,60,0.8);
+  text-align: center;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#wave-alert.show { opacity: 1; }
+
+/* ===== GAME OVER SCREEN ===== */
+#gameover-screen {
+  position: fixed; inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,0,0,0.88);
+  z-index: 20;
+}
+#go-commander {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0;
+  max-height: 60vh;
+}
+#go-commander img {
+  max-height: 100%;
+  max-width: 80vw;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 24px rgba(0,0,0,0.8));
+}
+#go-message {
+  padding: 20px 30px 0;
+  text-align: center;
+  font-size: 20px; letter-spacing: 3px; color: #dff0d0;
+  line-height: 1.8;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.9);
+  min-height: 80px;
+}
+#go-footer {
+  width: 100%;
+  padding: 20px 30px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+#go-score-text {
+  font-size: 16px; letter-spacing: 4px; color: #c8a832;
+  text-shadow: 0 0 10px rgba(200,168,50,0.5);
+}
+#go-confirm-btn {
+  background: rgba(136,255,85,0.15);
+  border: 2px solid rgba(136,255,85,0.7);
+  border-radius: 8px;
+  color: #88ff55;
+  font-family: 'M PLUS 1p', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 4px;
+  padding: 14px 40px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  text-shadow: 0 0 10px rgba(136,255,85,0.4);
+}
+#go-confirm-btn:active {
+  background: rgba(136,255,85,0.3);
+  transform: scale(0.96);
+}
+#go-confirm-btn.confirmed {
+  background: rgba(136,255,85,0.25);
+  border-color: rgba(136,255,85,0.4);
+  color: rgba(136,255,85,0.7);
+  cursor: default;
+}
+</style>
+</head>
+<body>
+
+<!-- TOP SCREEN -->
+<div id="top-screen">
+  <div id="top-bg"></div>
+
+  <div id="logo-switcher">
+    <img src="/logo3.png" alt="EDF 5" class="active">
+    <img src="/logo2.png" alt="EDF 6">
+    <img src="/logo1.png" alt="EDF 6.1">
+  </div>
+
+  <div id="top-title">
+    <h1>EDF RUNNER</h1>
+    <span class="sub">SIDE-SCROLLING ACTION</span>
+  </div>
+
+  <div class="top-desc">
+    <p>巨大蟻の波を突破せよ！</p>
+    <p>タップでジャンプ</p>
+  </div>
+
+  <button id="start-btn" aria-label="ゲームスタート">
+    <img src="/mark.png" alt="START">
+  </button>
+
+  <p id="top-copyright">© D3PUBLISHER INC. All rights reserved.</p>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <canvas id="game-canvas"></canvas>
+  <div id="hud">
+    <span id="hud-score">SCORE: 0</span>
+    <span id="hud-time">00:00</span>
+  </div>
+  <div id="wave-alert">⚠ 大群接近 ⚠<br><span style="font-size:18px;letter-spacing:3px">MASSIVE WAVE INCOMING</span></div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div id="gameover-screen">
+  <div id="go-commander">
+    <img src="/commander.png" alt="指揮官" id="go-commander-img">
+  </div>
+  <div id="go-message"></div>
+  <div id="go-footer">
+    <div id="go-score-text"></div>
+    <button id="go-confirm-btn">指揮官確認</button>
+  </div>
+</div>
+
+<script>
+// ===== ASSET LOADING =====
+const ASSETS = {};
+const ASSET_LIST = [
+  ['bg',         '/bg.png'],
+  ['ground',     '/ground.png'],
+  ['effect',     '/effect.png'],
+  ['sol_run1',   '/sol_run1.png'],
+  ['sol_run2',   '/sol_run2.png'],
+  ['sol_run3',   '/sol_run3.png'],
+  ['sol_run4',   '/sol_run4.png'],
+  ['sol_run5',   '/sol_run5.png'],
+  ['sol_run6',   '/sol_run6.png'],
+  ['sol_jump',   '/sol_jump.png'],
+  ['ant1',       '/ant1.png'],
+  ['ant2',       '/ant2.png'],
+  ['ant3',       '/ant3.png'],
+  ['ant4',       '/ant4.png'],
+  ['commander',  '/commander.png'],
+];
+
+function loadAssets() {
+  return Promise.all(ASSET_LIST.map(([key, src]) => new Promise((res) => {
+    const img = new Image();
+    img.onload = () => { ASSETS[key] = img; res(); };
+    img.onerror = () => { ASSETS[key] = null; res(); };
+    img.src = src;
+  })));
+}
+
+// ===== LOGO SWITCHER =====
+(function() {
+  const logos = document.querySelectorAll('#logo-switcher img');
+  let current = 0;
+  setInterval(() => {
+    logos[current].classList.remove('active');
+    current = (current + 1) % logos.length;
+    logos[current].classList.add('active');
+  }, 2000);
+})();
+
+// ===== GAME CONSTANTS =====
+const GROUND_RATIO   = 0.78;  // canvas height ratio where ground surface is
+const SOL_X_RATIO    = 0.18;  // soldier fixed X position ratio
+const SOL_WIDTH      = 90;
+const SOL_HEIGHT     = 140;
+const ANT_WIDTH      = 80;
+const ANT_HEIGHT     = 60;
+const GRAVITY        = 1800;  // px/s²
+const JUMP_VY        = -620;  // px/s
+const SCROLL_SPEED_INIT = 320; // px/s
+const SCROLL_ACCEL   = 8;     // px/s per second
+const ANT_SPAWN_MIN  = 1.4;   // seconds
+const ANT_SPAWN_MAX  = 2.8;
+const WAVE_TIME      = 30;    // seconds until wave
+const WAVE_DURATION  = 6;     // seconds of wave
+const ANT_FRAME_MS   = 130;
+const SOL_FRAME_MS   = 80;
+
+// ===== GAME STATE =====
+let canvas, ctx, W, H, groundY;
+let gameRunning = false;
+let gameOver    = false;
+let startTime, elapsed, score;
+let scrollSpeed;
+let bgX1, bgX2, groundX1, groundX2;
+let soldier, ants, effects;
+let nextAntSpawn;
+let inWave, waveStartTime;
+let antFrameIdx, antFrameTimer;
+let solFrameIdx, solFrameTimer;
+let animId;
+
+function $ (id) { return document.getElementById(id); }
+
+// ===== RESIZE =====
+function resize() {
+  W = canvas.width  = canvas.offsetWidth;
+  H = canvas.height = canvas.offsetHeight;
+  groundY = H * GROUND_RATIO;
+}
+
+// ===== INIT GAME =====
+function initGame() {
+  resize();
+
+  startTime    = performance.now();
+  elapsed      = 0;
+  score        = 0;
+  scrollSpeed  = SCROLL_SPEED_INIT;
+  bgX1         = 0;
+  bgX2         = W;
+  groundX1     = 0;
+  groundX2     = W;
+  inWave       = false;
+  waveStartTime= 0;
+  antFrameIdx  = 0;
+  antFrameTimer= 0;
+  solFrameIdx  = 0;
+  solFrameTimer= 0;
+  gameRunning  = true;
+  gameOver     = false;
+
+  soldier = {
+    x: W * SOL_X_RATIO,
+    y: groundY - SOL_HEIGHT,
+    vy: 0,
+    onGround: true,
+    dead: false,
+    effectTimer: 0,
+  };
+
+  ants    = [];
+  effects = [];
+
+  scheduleNextAnt();
+  updateHUD();
+}
+
+function scheduleNextAnt() {
+  nextAntSpawn = performance.now() + (ANT_SPAWN_MIN + Math.random() * (ANT_SPAWN_MAX - ANT_SPAWN_MIN)) * 1000;
+}
+
+// ===== JUMP =====
+function jump() {
+  if (!gameRunning || gameOver) return;
+  if (soldier.onGround) {
+    soldier.vy = JUMP_VY;
+    soldier.onGround = false;
+  }
+}
+
+// ===== UPDATE =====
+let lastTime = 0;
+function update(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+
+  if (!gameRunning || gameOver) return;
+
+  elapsed = (now - startTime) / 1000;
+  score   = Math.floor(elapsed * 10);
+
+  // speed ramp
+  scrollSpeed = SCROLL_SPEED_INIT + elapsed * SCROLL_ACCEL;
+
+  // wave trigger
+  if (!inWave && elapsed >= WAVE_TIME) {
+    inWave = true;
+    waveStartTime = now;
+    showWaveAlert();
+    spawnWave();
+  }
+
+  // scroll background
+  const dx = scrollSpeed * dt;
+  bgX1 -= dx * 0.6;
+  bgX2 -= dx * 0.6;
+  if (bgX1 + W <= 0) bgX1 = bgX2 + W;
+  if (bgX2 + W <= 0) bgX2 = bgX1 + W;
+
+  groundX1 -= dx;
+  groundX2 -= dx;
+  if (groundX1 + W <= 0) groundX1 = groundX2 + W;
+  if (groundX2 + W <= 0) groundX2 = groundX1 + W;
+
+  // soldier physics
+  if (!soldier.onGround) {
+    soldier.vy += GRAVITY * dt;
+    soldier.y  += soldier.vy * dt;
+    if (soldier.y >= groundY - SOL_HEIGHT) {
+      soldier.y  = groundY - SOL_HEIGHT;
+      soldier.vy = 0;
+      soldier.onGround = true;
+    }
+  }
+
+  // soldier frame
+  solFrameTimer += dt * 1000;
+  if (solFrameTimer >= SOL_FRAME_MS) {
+    solFrameTimer = 0;
+    if (soldier.onGround) solFrameIdx = (solFrameIdx + 1) % 6;
+  }
+
+  // ant frame
+  antFrameTimer += dt * 1000;
+  if (antFrameTimer >= ANT_FRAME_MS) {
+    antFrameTimer = 0;
+    antFrameIdx = (antFrameIdx + 1) % 4;
+  }
+
+  // ant spawn
+  if (!inWave && now >= nextAntSpawn) {
+    spawnAnt();
+    scheduleNextAnt();
+  }
+
+  // update ants
+  for (let i = ants.length - 1; i >= 0; i--) {
+    const a = ants[i];
+    a.x -= scrollSpeed * dt * (a.speedMul || 1);
+    if (a.x + ANT_WIDTH < 0) {
+      ants.splice(i, 1);
+      continue;
+    }
+    // collision
+    if (!soldier.dead && !gameOver) {
+      const sx = soldier.x + 10, sy = soldier.y + 10;
+      const sw = SOL_WIDTH - 20, sh = SOL_HEIGHT - 10;
+      const ax = a.x + 8,        ay = a.y + 8;
+      const aw = ANT_WIDTH - 16, ah = ANT_HEIGHT - 8;
+      if (sx < ax + aw && sx + sw > ax && sy < ay + ah && sy + sh > ay) {
+        triggerGameOver();
+        return;
+      }
+    }
+  }
+
+  // effects
+  for (let i = effects.length - 1; i >= 0; i--) {
+    effects[i].timer -= dt * 1000;
+    if (effects[i].timer <= 0) effects.splice(i, 1);
+  }
+
+  updateHUD();
+}
+
+function spawnAnt() {
+  ants.push({
+    x: W + 20,
+    y: groundY - ANT_HEIGHT,
+    speedMul: 1,
+  });
+}
+
+function spawnWave() {
+  // spawn 8 ants in quick succession, overlapping
+  for (let i = 0; i < 8; i++) {
+    ants.push({
+      x: W + 20 + i * 45,
+      y: groundY - ANT_HEIGHT,
+      speedMul: 1.3,
+    });
+  }
+}
+
+function showWaveAlert() {
+  const el = $('wave-alert');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function triggerGameOver() {
+  gameOver    = true;
+  gameRunning = false;
+
+  // show effect at soldier position
+  effects.push({ x: soldier.x, y: soldier.y - 10, timer: 800 });
+
+  // show game over screen after short delay
+  setTimeout(() => {
+    $('game-screen').style.display = 'none';
+    showGameOverScreen();
+  }, 900);
+}
+
+// ===== DRAW =====
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // background
+  const bg = ASSETS['bg'];
+  if (bg) {
+    ctx.drawImage(bg, bgX1, 0, W, H);
+    ctx.drawImage(bg, bgX2, 0, W, H);
+  } else {
+    ctx.fillStyle = '#0a1a0f';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ground strip
+  const gr = ASSETS['ground'];
+  if (gr) {
+    const gh = H - groundY + 20;
+    ctx.drawImage(gr, groundX1, groundY - 10, W, gh);
+    ctx.drawImage(gr, groundX2, groundY - 10, W, gh);
+  } else {
+    ctx.fillStyle = '#1a3a0a';
+    ctx.fillRect(0, groundY, W, H - groundY);
+  }
+
+  // ants
+  const antImg = ASSETS[`ant${antFrameIdx + 1}`];
+  for (const a of ants) {
+    if (antImg) {
+      ctx.drawImage(antImg, a.x, a.y, ANT_WIDTH, ANT_HEIGHT);
+    }
+  }
+
+  // soldier
+  if (!gameOver) {
+    let solImg;
+    if (soldier.onGround) {
+      solImg = ASSETS[`sol_run${solFrameIdx + 1}`];
+    } else {
+      solImg = ASSETS['sol_jump'];
+    }
+    if (solImg) {
+      ctx.drawImage(solImg, soldier.x, soldier.y, SOL_WIDTH, SOL_HEIGHT);
+    }
+  }
+
+  // effects
+  const effImg = ASSETS['effect'];
+  for (const ef of effects) {
+    if (effImg) {
+      const alpha = Math.min(ef.timer / 400, 1);
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(effImg, ef.x - 20, ef.y - 20, SOL_WIDTH + 40, SOL_HEIGHT + 40);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+// ===== GAME LOOP =====
+function gameLoop(now) {
+  update(now);
+  draw();
+  if (!gameOver) animId = requestAnimationFrame(gameLoop);
+  else {
+    // keep drawing effect
+    draw();
+  }
+}
+
+// ===== HUD =====
+function updateHUD() {
+  $('hud-score').textContent = `SCORE: ${score}`;
+  const sec = Math.floor(elapsed);
+  const mm  = String(Math.floor(sec / 60)).padStart(2, '0');
+  const ss  = String(sec % 60).padStart(2, '0');
+  $('hud-time').textContent = `${mm}:${ss}`;
+}
+
+// ===== GAME OVER SCREEN =====
+const GO_MESSAGES = [
+  '隊員が倒れた！\n敵の侵攻を止められなかった…',
+  '巨大生物に敗北…\n我々の戦いはここで終わるのか！',
+  '隊員よ…よく戦ってくれた。\n次は必ず勝利を掴め！',
+];
+
+function showGameOverScreen() {
+  const msg = GO_MESSAGES[Math.floor(Math.random() * GO_MESSAGES.length)];
+  $('go-message').textContent = '';
+  $('go-score-text').textContent = `SCORE: ${score} — SURVIVAL: ${Math.floor(elapsed)}s`;
+  $('go-confirm-btn').textContent = '指揮官確認';
+  $('go-confirm-btn').classList.remove('confirmed');
+  $('gameover-screen').style.display = 'flex';
+
+  // typewriter voice + text
+  typeMessage(msg, () => {
+    speakMessage(msg.replace(/\n/g, '。'));
+  });
+}
+
+function typeMessage(text, onDone) {
+  const el = $('go-message');
+  el.textContent = '';
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      el.textContent += text[i++];
+    } else {
+      clearInterval(interval);
+      if (onDone) onDone();
+    }
+  }, 60);
+}
+
+function speakMessage(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  utter.rate = 0.95;
+  utter.pitch = 1.1;
+  window.speechSynthesis.speak(utter);
+}
+
+// ===== INPUT =====
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'ArrowUp') jump();
+});
+
+// ===== START =====
+$('start-btn').addEventListener('click', startGame);
+$('start-btn').addEventListener('touchend', (e) => { e.preventDefault(); startGame(); });
+
+function startGame() {
+  $('top-screen').style.display = 'none';
+  $('game-screen').style.display = 'block';
+  canvas = $('game-canvas');
+  ctx    = canvas.getContext('2d');
+  resize();
+
+  canvas.addEventListener('click', jump);
+  canvas.addEventListener('touchend', (e) => { e.preventDefault(); jump(); }, { passive: false });
+
+  loadAssets().then(() => {
+    initGame();
+    lastTime = performance.now();
+    animId   = requestAnimationFrame(gameLoop);
+  });
+}
+
+window.addEventListener('resize', () => {
+  if (canvas) resize();
+});
+
+// ===== CONFIRM BUTTON =====
+$('go-confirm-btn').addEventListener('click', function() {
+  if (this.classList.contains('confirmed')) return;
+  this.textContent = '指揮官確認済 ✓';
+  this.classList.add('confirmed');
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  // return to top after 1.5s
+  setTimeout(() => {
+    $('gameover-screen').style.display = 'none';
+    $('top-screen').style.display = 'flex';
+    cancelAnimationFrame(animId);
+  }, 1500);
+});
+</script>
+</body>
+</html>
