@@ -156,40 +156,45 @@ html, body {
   display: none;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   background: url('/bg.png') center center / cover no-repeat;
   z-index: 20;
 }
 #gameover-screen::before {
   content: '';
   position: absolute; inset: 0;
-  background: rgba(0,0,0,0.72);
+  background: rgba(0,0,0,0.48);
   z-index: 0;
 }
-#gameover-screen > * { position: relative; z-index: 1; }
+/* 指揮官は絶対配置で画面下に固定（テキスト・ボタンの後ろ） */
 #go-commander {
-  flex: 1;
+  position: absolute !important;
+  bottom: 0; left: 0; right: 0;
   display: flex;
-  align-items: flex-end;
   justify-content: center;
-  padding-top: 55%;
+  align-items: flex-end;
+  z-index: 1 !important;
 }
 #go-commander img {
-  max-height: 42vh;
-  max-width: 75vw;
+  max-height: 82vh;
+  max-width: 95vw;
   object-fit: contain;
-  filter: drop-shadow(0 4px 24px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 4px 32px rgba(0,0,0,0.7));
 }
+/* テキスト・フッターは指揮官の上に重なる */
 #go-message {
-  padding: 20px 30px 0;
+  position: relative; z-index: 2;
+  padding: 16px 30px 0;
   text-align: center;
   font-size: 20px; letter-spacing: 3px; color: #dff0d0;
   line-height: 1.8;
-  text-shadow: 0 1px 10px rgba(0,0,0,0.9);
+  text-shadow: 0 1px 12px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1);
   min-height: 80px;
 }
 #go-footer {
+  position: relative; z-index: 2;
   width: 100%;
-  padding: 20px 30px 40px;
+  padding: 14px 30px 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,7 +202,7 @@ html, body {
 }
 #go-score-text {
   font-size: 16px; letter-spacing: 4px; color: #c8a832;
-  text-shadow: 0 0 10px rgba(200,168,50,0.5);
+  text-shadow: 0 0 10px rgba(200,168,50,0.5), 0 1px 6px rgba(0,0,0,1);
 }
 .go-btn {
   background: none;
@@ -390,9 +395,9 @@ function playJumpSound() {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(280, ac.currentTime);
     osc.frequency.exponentialRampToValueAtTime(560, ac.currentTime + 0.09);
-    gain.gain.setValueAtTime(0.18, ac.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
-    osc.start(); osc.stop(ac.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.38, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.14);
+    osc.start(); osc.stop(ac.currentTime + 0.14);
   } catch(e) {}
 }
 function playVolunteerSound() {
@@ -706,7 +711,7 @@ function triggerGameOver() {
     cancelAnimationFrame(animId);
     $('game-screen').style.display = 'none';
     showGameOverScreen();
-  }, 1800);
+  }, 2800);
 }
 
 // ===== DRAW =====
