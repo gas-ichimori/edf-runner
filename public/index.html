@@ -83,13 +83,20 @@ html, body {
   background: none; border: none; cursor: pointer;
   padding: 0;
   filter: drop-shadow(0 0 16px rgba(136,255,85,0.6));
-  transition: transform 0.1s, filter 0.1s;
-}
-#start-btn:active {
-  transform: scale(0.94);
-  filter: drop-shadow(0 0 8px rgba(136,255,85,0.3));
+  transition: transform 0.15s, filter 0.15s;
 }
 #start-btn img { width: 110px; height: 110px; object-fit: contain; }
+@keyframes btn-launch {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(0.82); }
+  60%  { transform: scale(1.18); }
+  80%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+#start-btn.launching {
+  animation: btn-launch 0.45s ease forwards;
+  pointer-events: none;
+}
 
 #top-copyright {
   position: absolute; bottom: 10px; left: 0; right: 0;
@@ -294,6 +301,42 @@ html, body {
 </div>
 
 <script>
+// ===== AUDIO =====
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playStartSound() {
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(220, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ac.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.25, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.25);
+    osc.start(); osc.stop(ac.currentTime + 0.25);
+  } catch(e) {}
+}
+function playJumpSound() {
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(280, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(560, ac.currentTime + 0.09);
+    gain.gain.setValueAtTime(0.18, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
+    osc.start(); osc.stop(ac.currentTime + 0.12);
+  } catch(e) {}
+}
+
 // ===== ASSET LOADING =====
 const ASSETS = {};
 const ASSET_LIST = [
@@ -429,6 +472,7 @@ function jump() {
   if (soldier.onGround) {
     soldier.vy = JUMP_VY;
     soldier.onGround = false;
+    playJumpSound();
   }
 }
 
@@ -562,7 +606,7 @@ function triggerGameOver() {
     cancelAnimationFrame(animId);
     $('game-screen').style.display = 'none';
     showGameOverScreen();
-  }, 950);
+  }, 1800);
 }
 
 // ===== DRAW =====
@@ -590,12 +634,16 @@ function draw() {
     ctx.fillRect(0, groundY, W, H - groundY);
   }
 
-  // ants
+  // ants (green glow)
   const antImg = ASSETS[`ant${antFrameIdx + 1}`];
-  for (const a of ants) {
-    if (antImg) {
+  if (antImg) {
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#44ff44';
+    for (const a of ants) {
       ctx.drawImage(antImg, a.x, a.y, ANT_WIDTH, ANT_HEIGHT);
     }
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
   }
 
   // soldier
@@ -689,8 +737,15 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ===== START =====
-$('start-btn').addEventListener('click', startGame);
-$('start-btn').addEventListener('touchend', (e) => { e.preventDefault(); startGame(); });
+function onStartPress() {
+  const btn = $('start-btn');
+  if (btn.classList.contains('launching')) return;
+  btn.classList.add('launching');
+  playStartSound();
+  setTimeout(startGame, 480);
+}
+$('start-btn').addEventListener('click', onStartPress);
+$('start-btn').addEventListener('touchend', (e) => { e.preventDefault(); onStartPress(); });
 
 function startGame() {
   $('top-screen').style.display = 'none';
