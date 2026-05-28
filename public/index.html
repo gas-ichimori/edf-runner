@@ -171,12 +171,11 @@ html, body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 0;
-  max-height: 60vh;
+  padding-top: 55%;
 }
 #go-commander img {
-  max-height: 100%;
-  max-width: 80vw;
+  max-height: 42vh;
+  max-width: 75vw;
   object-fit: contain;
   filter: drop-shadow(0 4px 24px rgba(0,0,0,0.8));
 }
@@ -209,7 +208,23 @@ html, body {
   transition: transform 0.1s;
   display: block;
 }
-.go-btn:active { transform: scale(0.95); }
+@keyframes go-btn-press {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.86); }
+  65%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes go-btn-glow-green {
+  0%,100% { filter: drop-shadow(0 0 6px rgba(136,255,85,0.5)); }
+  50%     { filter: drop-shadow(0 0 22px rgba(136,255,85,1)); }
+}
+@keyframes go-btn-glow-gold {
+  0%,100% { filter: drop-shadow(0 0 6px rgba(200,168,50,0.5)); }
+  50%     { filter: drop-shadow(0 0 22px rgba(200,168,50,1)); }
+}
+.go-btn.pressing { animation: go-btn-press 0.32s ease forwards; }
+#btn-volunteer.attention { animation: go-btn-glow-green 0.4s ease 3; }
+#btn-share.attention     { animation: go-btn-glow-gold  0.4s ease 3; }
 .go-btn img { display: block; width: 280px; }
 .go-btn-text {
   position: absolute;
@@ -334,6 +349,39 @@ function playJumpSound() {
     gain.gain.setValueAtTime(0.18, ac.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
     osc.start(); osc.stop(ac.currentTime + 0.12);
+  } catch(e) {}
+}
+function playVolunteerSound() {
+  try {
+    const ac = getAudio();
+    // 上昇するファンファーレ3音
+    [330, 440, 550].forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const t = ac.currentTime + i * 0.1;
+      gain.gain.setValueAtTime(0.0, t);
+      gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.start(t); osc.stop(t + 0.14);
+    });
+  } catch(e) {}
+}
+function playShareSound() {
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(500, ac.currentTime + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(750, ac.currentTime + 0.28);
+    gain.gain.setValueAtTime(0.2, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.32);
+    osc.start(); osc.stop(ac.currentTime + 0.32);
   } catch(e) {}
 }
 
@@ -781,46 +829,59 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(resize, 150);
 });
 
+function pressBtn(btn, onDone) {
+  btn.classList.remove('pressing', 'attention');
+  void btn.offsetWidth; // reflow でアニメーションリセット
+  btn.classList.add('pressing');
+  btn.addEventListener('animationend', function onPressEnd(e) {
+    if (e.animationName !== 'go-btn-press') return;
+    btn.removeEventListener('animationend', onPressEnd);
+    btn.classList.remove('pressing');
+    btn.classList.add('attention');
+    btn.addEventListener('animationend', function onAttnEnd(e) {
+      if (e.animationName.indexOf('glow') === -1) return;
+      btn.removeEventListener('animationend', onAttnEnd);
+      btn.classList.remove('attention');
+      if (onDone) onDone();
+    });
+  });
+}
+
 // ===== VOLUNTEER BUTTON =====
 $('btn-volunteer').addEventListener('click', function() {
+  if (this.style.pointerEvents === 'none') return;
   this.style.pointerEvents = 'none';
   $('btn-share').style.pointerEvents = 'none';
-  const msg = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
-  // タイプライターでメッセージ表示
-  typeMessage(msg, null);
-  // 音声再生、終了後1秒で遷移
-  if (window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(msg);
-    utter.lang = 'ja-JP';
-    utter.rate = 0.95;
-    utter.pitch = 1.1;
-    utter.onend = () => {
-      setTimeout(() => {
+  playVolunteerSound();
+  pressBtn(this, () => {
+    const msg = '貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう';
+    typeMessage(msg, null);
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(msg);
+      utter.lang = 'ja-JP'; utter.rate = 0.95; utter.pitch = 1.1;
+      utter.onend = () => setTimeout(() => {
         window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
       }, 1000);
-    };
-    window.speechSynthesis.speak(utter);
-  } else {
-    // 音声非対応の場合は3秒後に遷移
-    setTimeout(() => {
-      window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
-    }, 3000);
-  }
+      window.speechSynthesis.speak(utter);
+    } else {
+      setTimeout(() => {
+        window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+      }, 3000);
+    }
+  });
 });
 
 // ===== SHARE BUTTON =====
-$('btn-share').addEventListener('click', async function() {
-  if (!navigator.share) {
-    alert('このブラウザはシェア機能に対応していません');
-    return;
-  }
-  try {
-    await navigator.share({
-      title: 'EDF RUNNER',
-      text: '#D3P',
-    });
-  } catch(e) {}
+$('btn-share').addEventListener('click', function() {
+  if (this.style.pointerEvents === 'none') return;
+  playShareSound();
+  pressBtn(this, async () => {
+    if (!navigator.share) { alert('このブラウザはシェア機能に対応していません'); return; }
+    try {
+      await navigator.share({ title: 'EDF RUNNER', text: '#D3P' });
+    } catch(e) {}
+  });
 });
 </script>
 </body>
