@@ -58,12 +58,13 @@ html, body {
   text-align: center;
 }
 #top-title h1 {
-  font-size: 52px; letter-spacing: 8px; color: #c8a832;
+  font-size: 42px; letter-spacing: 6px; color: #c8a832;
   text-shadow: 0 2px 20px rgba(0,0,0,0.9);
+  line-height: 1.2;
 }
-#top-title .sub {
+#top-title .sub-en {
   display: block; margin-top: 8px;
-  font-size: 13px; letter-spacing: 5px; color: rgba(200,168,50,0.8);
+  font-size: 13px; letter-spacing: 4px; color: rgba(200,168,50,0.8);
 }
 
 .top-desc {
@@ -143,9 +144,16 @@ html, body {
   display: none;
   flex-direction: column;
   align-items: center;
-  background: rgba(0,0,0,0.88);
+  background: url('/bg.png') center center / cover no-repeat;
   z-index: 20;
 }
+#gameover-screen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 0;
+}
+#gameover-screen > * { position: relative; z-index: 1; }
 #go-commander {
   flex: 1;
   display: flex;
@@ -180,29 +188,46 @@ html, body {
   font-size: 16px; letter-spacing: 4px; color: #c8a832;
   text-shadow: 0 0 10px rgba(200,168,50,0.5);
 }
-#go-confirm-btn {
-  background: rgba(136,255,85,0.15);
-  border: 2px solid rgba(136,255,85,0.7);
+.go-btn {
+  background: rgba(0,0,0,0.5);
   border-radius: 8px;
-  color: #88ff55;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, filter 0.1s;
+  border: none;
+}
+.go-btn:active { transform: scale(0.95); }
+.go-btn-text {
+  display: block;
   font-family: 'M PLUS 1p', sans-serif;
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 4px;
-  padding: 14px 40px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  text-shadow: 0 0 10px rgba(136,255,85,0.4);
+  font-size: 16px;
+  letter-spacing: 3px;
+  padding: 16px 28px;
+  border-radius: 8px;
 }
-#go-confirm-btn:active {
-  background: rgba(136,255,85,0.3);
-  transform: scale(0.96);
+#btn-volunteer {
+  border: 2px solid rgba(136,255,85,0.7);
+  filter: drop-shadow(0 0 10px rgba(136,255,85,0.3));
 }
-#go-confirm-btn.confirmed {
-  background: rgba(136,255,85,0.25);
-  border-color: rgba(136,255,85,0.4);
-  color: rgba(136,255,85,0.7);
-  cursor: default;
+#btn-volunteer .go-btn-text {
+  color: #88ff55;
+  text-shadow: 0 0 10px rgba(136,255,85,0.5);
+}
+#btn-share {
+  border: 2px solid rgba(200,168,50,0.7);
+  filter: drop-shadow(0 0 10px rgba(200,168,50,0.3));
+}
+#btn-share .go-btn-text {
+  color: #c8a832;
+  text-shadow: 0 0 10px rgba(200,168,50,0.5);
+}
+#go-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  align-items: center;
 }
 </style>
 </head>
@@ -219,8 +244,8 @@ html, body {
   </div>
 
   <div id="top-title">
-    <h1>EDF RUNNER</h1>
-    <span class="sub">SIDE-SCROLLING ACTION</span>
+    <h1>突破せよ！EDF！</h1>
+    <span class="sub-en">BREAK THROUGH! EDF!</span>
   </div>
 
   <div class="top-desc">
@@ -253,7 +278,14 @@ html, body {
   <div id="go-message"></div>
   <div id="go-footer">
     <div id="go-score-text"></div>
-    <button id="go-confirm-btn">指揮官確認</button>
+    <div id="go-btns">
+      <button class="go-btn" id="btn-volunteer">
+        <span class="go-btn-text">名もなき兵士に志願</span>
+      </button>
+      <button class="go-btn" id="btn-share">
+        <span class="go-btn-text">志願者募集をシェア</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -683,17 +715,28 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(resize, 150);
 });
 
-// ===== CONFIRM BUTTON =====
-$('go-confirm-btn').addEventListener('click', function() {
-  if (this.classList.contains('confirmed')) return;
-  this.textContent = '指揮官確認済 ✓';
-  this.classList.add('confirmed');
+// ===== VOLUNTEER BUTTON =====
+$('btn-volunteer').addEventListener('click', function() {
+  this.style.pointerEvents = 'none';
   window.speechSynthesis && window.speechSynthesis.cancel();
-  // return to top after 1.5s
+  speakMessage('貴殿の様な勇気ある行動は大歓迎だ...適正診断へ移行してもらう');
   setTimeout(() => {
-    $('gameover-screen').style.display = 'none';
-    $('top-screen').style.display = 'flex';
-  }, 1500);
+    window.location.href = 'https://gas-ichimori.github.io/edf-diagnosis/';
+  }, 1000);
+});
+
+// ===== SHARE BUTTON =====
+$('btn-share').addEventListener('click', async function() {
+  if (!navigator.share) {
+    alert('このブラウザはシェア機能に対応していません');
+    return;
+  }
+  try {
+    await navigator.share({
+      title: 'EDF RUNNER',
+      text: '#D3P',
+    });
+  } catch(e) {}
 });
 </script>
 </body>
